@@ -7,10 +7,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.extflightdelays.model.Airline;
 import it.polito.tdp.extflightdelays.model.Airport;
 import it.polito.tdp.extflightdelays.model.Flight;
+import it.polito.tdp.extflightdelays.model.OriDestPeso;
 
 public class ExtFlightDelaysDAO {
 
@@ -61,6 +63,40 @@ public class ExtFlightDelaysDAO {
 			System.out.println("Errore connessione al database");
 			throw new RuntimeException("Error Connection Database");
 		}
+	}
+
+	public List<OriDestPeso> getCoppie(int distanzaMin) {
+
+		String sql = "select origin_airport_id as origine, destination_airport_id as arrivo, avg(distance) as media from flights group by origin_airport_id, destination_airport_id";
+
+		List<OriDestPeso> listaCoppie = new ArrayList<>();
+
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet rs = st.executeQuery();
+
+			while (rs.next()) {
+
+				OriDestPeso coppia = new OriDestPeso(rs.getInt("origine"), rs.getInt("arrivo"), rs.getInt("media"));
+
+				// se la coppia ha la distanza giusta, la aggiungo alla lista da ritornare
+				if (coppia.getDistance() > distanzaMin) {
+
+					listaCoppie.add(coppia);
+				}
+
+			}
+			
+			// occhio a ritornare sempre la lista FUORI DAL WHILE!
+			conn.close();
+			return listaCoppie;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 
 	public List<Flight> loadAllFlights() {
